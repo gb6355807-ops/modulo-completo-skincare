@@ -1,257 +1,162 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import SkincareLayout from '../components/SkincareLayout';
-import { Heart, Star, ShoppingBag, Filter, Search, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Package, Star, ArrowLeft } from 'lucide-react'
 
 interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  category: string;
-  skinTypes: string[];
-  price: number;
-  rating: number;
-  image: string;
-  recommended?: boolean;
+  id: string
+  name: string
+  brand: string
+  category: string
+  skin_types: string[]
+  price: number
+  rating: number
+  image: string
+  description: string
 }
 
 export default function ProdutosPage() {
-  const [skinType] = useState<string>('mista');
-  const [savedProducts, setSavedProducts] = useState<string[]>(['1', '3']);
+  const router = useRouter()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
 
-  const products: Product[] = [
-    {
-      id: '1',
-      name: 'Sérum Vitamina C 20%',
-      brand: 'SkinGlow',
-      category: 'Sérum',
-      skinTypes: ['oleosa', 'mista', 'normal'],
-      price: 89.90,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&h=400&fit=crop',
-      recommended: true
-    },
-    {
-      id: '2',
-      name: 'Hidratante Ácido Hialurônico',
-      brand: 'HydraLux',
-      category: 'Hidratante',
-      skinTypes: ['seca', 'normal', 'sensivel'],
-      price: 79.90,
-      rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop',
-      recommended: true
-    },
-    {
-      id: '3',
-      name: 'Protetor Solar FPS 60',
-      brand: 'SunCare',
-      category: 'Protetor Solar',
-      skinTypes: ['oleosa', 'mista', 'normal', 'seca', 'sensivel'],
-      price: 69.90,
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop',
-      recommended: true
-    },
-    {
-      id: '4',
-      name: 'Tônico Facial Calmante',
-      brand: 'PureBalance',
-      category: 'Tônico',
-      skinTypes: ['sensivel', 'seca', 'normal'],
-      price: 59.90,
-      rating: 4.6,
-      image: 'https://images.unsplash.com/photo-1571875257727-256c39da42af?w=400&h=400&fit=crop'
-    },
-    {
-      id: '5',
-      name: 'Esfoliante Suave',
-      brand: 'GentleGlow',
-      category: 'Esfoliante',
-      skinTypes: ['oleosa', 'mista', 'normal'],
-      price: 49.90,
-      rating: 4.5,
-      image: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=400&h=400&fit=crop'
-    },
-    {
-      id: '6',
-      name: 'Máscara Facial Detox',
-      brand: 'PureSkin',
-      category: 'Máscara',
-      skinTypes: ['oleosa', 'mista'],
-      price: 54.90,
-      rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&fit=crop'
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
+      setUser(user)
     }
-  ];
 
-  const toggleSave = (productId: string) => {
-    setSavedProducts(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('rating', { ascending: false })
 
-  const recommendedProducts = products.filter(p => p.recommended);
-  const otherProducts = products.filter(p => !p.recommended);
+      if (error) {
+        console.error('Erro ao buscar produtos:', error)
+      } else {
+        setProducts(data || [])
+      }
+      setLoading(false)
+    }
+
+    checkUser()
+    fetchProducts()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando produtos...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <SkincareLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-pink-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                Produtos Skincare
+              </h1>
+            </div>
+            <Link
+              href="/skincare"
+              className="px-4 py-2 text-gray-600 hover:text-pink-600 transition-colors duration-300 rounded-lg hover:bg-pink-50 flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
             Produtos Recomendados
-          </h1>
-          <p className="text-gray-600 mt-2">Selecionados especialmente para pele {skinType}</p>
+          </h2>
+          <p className="text-xl text-gray-600">
+            Descubra produtos ideais para o seu tipo de pele
+          </p>
         </div>
 
-        {/* Filtros e Busca */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar produtos..."
-              className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-pink-300 focus:outline-none"
-            />
-          </div>
-          <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-pink-300 transition-colors">
-            <Filter className="w-5 h-5" />
-            Filtros
-          </button>
-        </div>
-
-        {/* Banner de Tipo de Pele */}
-        <div className="bg-gradient-to-r from-pink-400 to-purple-500 rounded-2xl p-6 text-white shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">Seu Tipo de Pele: {skinType.charAt(0).toUpperCase() + skinType.slice(1)}</h3>
-              <p className="text-white/90 text-sm">Produtos selecionados com base no seu perfil</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Produtos Recomendados */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-pink-500" />
-            <h2 className="text-2xl font-bold text-gray-800">Recomendados para Você</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recommendedProducts.map((product) => (
-              <div key={product.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group">
-                <div className="relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <button
-                    onClick={() => toggleSave(product.id)}
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        savedProducts.includes(product.id)
-                          ? 'fill-pink-500 text-pink-500'
-                          : 'text-gray-600'
-                      }`}
-                    />
-                  </button>
-                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-semibold">
-                    Recomendado
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="text-sm text-gray-500 mb-1">{product.brand}</div>
-                  <h3 className="font-bold text-gray-800 mb-2">{product.name}</h3>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-semibold text-gray-700">{product.rating}</span>
-                    <span className="text-xs text-gray-500">(245 avaliações)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-gray-800">
-                      R$ {product.price.toFixed(2)}
-                    </div>
-                    <button className="p-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:scale-105 transition-transform">
-                      <ShoppingBag className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-pink-100"
+            >
+              {/* Product Image Placeholder */}
+              <div className="w-full h-48 bg-gradient-to-br from-pink-100 to-purple-100 rounded-xl mb-4 flex items-center justify-center">
+                <Package className="w-12 h-12 text-pink-400" />
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Outros Produtos */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-800">Outros Produtos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {otherProducts.map((product) => (
-              <div key={product.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group">
-                <div className="relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <button
-                    onClick={() => toggleSave(product.id)}
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${
-                        savedProducts.includes(product.id)
-                          ? 'fill-pink-500 text-pink-500'
-                          : 'text-gray-600'
-                      }`}
-                    />
-                  </button>
+              {/* Product Info */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-gray-800 line-clamp-2">
+                  {product.name}
+                </h3>
+                <p className="text-sm text-gray-600">{product.brand}</p>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                  <span className="text-sm text-gray-600">{product.rating}</span>
                 </div>
-                <div className="p-4">
-                  <div className="text-sm text-gray-500 mb-1">{product.brand}</div>
-                  <h3 className="font-bold text-gray-800 mb-2">{product.name}</h3>
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-semibold text-gray-700">{product.rating}</span>
-                    <span className="text-xs text-gray-500">(128 avaliações)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold text-gray-800">
-                      R$ {product.price.toFixed(2)}
-                    </div>
-                    <button className="p-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:scale-105 transition-transform">
-                      <ShoppingBag className="w-5 h-5" />
-                    </button>
-                  </div>
+
+                {/* Price */}
+                <p className="text-2xl font-bold text-pink-600">
+                  R$ {product.price.toFixed(2)}
+                </p>
+
+                {/* Skin Types */}
+                <div className="flex flex-wrap gap-1">
+                  {product.skin_types.map((type) => (
+                    <span
+                      key={type}
+                      className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full capitalize"
+                    >
+                      {type}
+                    </span>
+                  ))}
                 </div>
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 line-clamp-2">
+                  {product.description}
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* Produtos Salvos */}
-        {savedProducts.length > 0 && (
-          <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-6 border-2 border-pink-200">
-            <div className="flex items-center gap-3 mb-4">
-              <Heart className="w-6 h-6 text-pink-600 fill-pink-600" />
-              <h3 className="text-xl font-bold text-gray-800">
-                {savedProducts.length} {savedProducts.length === 1 ? 'Produto Salvo' : 'Produtos Salvos'}
-              </h3>
-            </div>
-            <p className="text-gray-700">
-              Acesse seus produtos favoritos a qualquer momento na sua lista de salvos!
-            </p>
+        {products.length === 0 && (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">Nenhum produto encontrado.</p>
           </div>
         )}
-      </div>
-    </SkincareLayout>
-  );
+      </main>
+    </div>
+  )
 }
